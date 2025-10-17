@@ -54,6 +54,14 @@ def close_ticket(db: Session, ticket_id: int, type: str | None = None) -> Ticket
         db.refresh(ticket)
     return ticket
 
+def get_tickets_by_status(db: Session, status: str | None = None) -> list[Ticket]:
+    query = db.query(Ticket)
+
+    if status and status.lower() != "all":
+        query = query.filter(Ticket.status == status)
+
+    return query.order_by(Ticket.created_at.desc()).all()
+
 def get_tickets_by_type(db: Session, ticket_type: str) -> list[Ticket]:
     return db.query(Ticket).filter(Ticket.type == ticket_type).all()
 

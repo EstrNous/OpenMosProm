@@ -35,7 +35,6 @@ class Message(Base):
 class Ticket(Base):
     __tablename__ = "tickets"
 
-    id = Column(Integer, primary_key=True, index=True)
     dialog_id = Column(Integer, ForeignKey("dialogs.id", ondelete="CASCADE"), primary_key=True)
     status = Column(Enum("solved", "in_progress", "escalated", name="ticket_status"), default="open")
     created_at = Column(DateTime, default=datetime.now)
