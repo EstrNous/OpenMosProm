@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from Backend.app.routers.routers import r as test_router
+from routers.routers import r as test_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()

@@ -1,9 +1,8 @@
 import os
 import httpx
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from dotenv import load_dotenv
-from pydantic import BaseModel
-from ML.app.schemas.agent_schemas import PromptRequest, SimpleAnswer
+from ..schemas import PromptRequest, SimpleAnswer
 
 # Загружаем переменные окружения
 load_dotenv()

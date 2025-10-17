@@ -1,5 +1,5 @@
 ML/venv/
-Baclend/venv/
+Backend/venv/
 
 .vscode/
 .idea/
@@ -9,4 +9,4 @@ __pycache__/
 *.pyo
 *.pyd
 
-.env*
+.env
