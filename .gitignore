@@ -1,0 +1,12 @@
+ML/venv/
+Baclend/venv/
+
+.vscode/
+.idea/
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+.env*
