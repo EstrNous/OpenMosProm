@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.schemas.agent_schemas import PromptRequest, SimpleAnswer
-from app.services.llm_service import llm_service
+from ...schemas.agent_schemas import PromptRequest, SimpleAnswer
+from ...services.llm_service import llm_service
 
 router = APIRouter()
 

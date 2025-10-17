@@ -19,6 +19,8 @@ services:
       - "8001:8001"
     env_file:
       - .env
+    volumes:
+      - ml-models:/models
     depends_on:
       - ollama
     networks:
@@ -61,3 +63,4 @@ networks:
 volumes:
   ollama-data:
   postgres-data:
+  ml-models:
