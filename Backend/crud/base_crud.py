@@ -65,6 +65,18 @@ def get_tickets_by_status(db: Session, status: str | None = None) -> list[Ticket
 def get_tickets_by_type(db: Session, ticket_type: str) -> list[Ticket]:
     return db.query(Ticket).filter(Ticket.type == ticket_type).all()
 
+def get_ticket_times(db: Session, dialog_id: int) -> dict | None:
+    ticket = db.query(Ticket).filter(Ticket.dialog_id == dialog_id).first()
+
+    if not ticket:
+        return None
+
+    return {
+        "id": ticket.dialog_id,
+        "created_at": ticket.created_at,
+        "resolved_at": ticket.resolved_at
+    }
+
 def create_feedback(db: Session, dialog_id: int, rating: int, comment: str | None = None) -> Feedback:
     feedback = Feedback(dialog_id=dialog_id, rating=rating, comment=comment)
     db.add(feedback)
