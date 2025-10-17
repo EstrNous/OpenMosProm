@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 import httpx
 from datetime import datetime
@@ -13,6 +14,7 @@ class UserSimulator:
         self.backend_url = backend_url
         self.is_running = False
         self.sent_count = 0
+        self.interval = [float(os.getenv("INTERVAL_LOWER", 0.2)), float(os.getenv("INTERVAL_UPPER", 0.4))]
 
     async def load_requests(self):
         """Загрузка реальных обращений из файла"""
@@ -34,14 +36,14 @@ class UserSimulator:
 
             await self.send_support_request(request_text)
 
-            await asyncio.sleep(random.uniform(0.5, 2))
+            await asyncio.sleep(random.uniform(self.interval[0], self.interval[1]))
 
     async def send_support_request(self, message: str):
         """Отправка запроса в систему как реальный пользователь"""
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{self.backend_url}/api/v1/support/process",
+                    f"{self.backend_url}/support/process",
                     json={
                         "user_message": message,
                         "user_id": f"user_{random.randint(1000, 9999)}",
