@@ -58,6 +58,13 @@ async def simulate_stop():
 async def simulate_status():
     return simulation_manager.status()
 
-@r.get("/statistic")
-async def get_counts_of_tickets():
-    return {"message": "Обратился к Витале"}
+@r.get("/statistic/all_count/{status_t}")
+async def get_sum_of_tickets(status_t: str):
+    return {"message": "Обратился к Витале c"+ status_t}
+
+@r.get("/statistic/time_spending")
+async def spend_time():
+    time = []
+    for i in range(10):
+        time.append(i)
+    return sum(time)/ len(time)
