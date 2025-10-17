@@ -5,3 +5,9 @@ class PromptRequest(BaseModel):
 
 class SimpleAnswer(BaseModel):
     answer: str
+
+class SupportRequest(BaseModel):
+    user_message: str
+    user_id: str
+    timestamp: str
+    channel: str = "web"
