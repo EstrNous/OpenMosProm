@@ -1,9 +1,9 @@
 import os
 import httpx
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, WebSocket
 from dotenv import load_dotenv
-from pydantic import BaseModel
-from ML.app.schemas.agent_schemas import PromptRequest, SimpleAnswer
+from ..schemas import PromptRequest, SimpleAnswer, SupportRequest
+from ..services import simulation_manager
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -12,7 +12,7 @@ r = APIRouter()
 
 ML_API_URL = os.getenv('ML_API_URL')
 
-@r.post("/test-ml",response_model=SimpleAnswer)
+@r.post("/test-ml", response_model=SimpleAnswer)
 async def test_func(request: PromptRequest):
     ml_request = {
         "prompt": request.prompt
@@ -26,9 +26,33 @@ async def test_func(request: PromptRequest):
             )
             response.raise_for_status()
             return response.json()
-
     except httpx.RequestError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"ml service is unavailable: {e}"
         )
+
+# Получение запроса от "пользователя"
+@r.post("/support/process", response_model=SupportRequest)
+async def process_support_request(request: SupportRequest):
+    """Простой placeholder приёма обращений — симулятор POST'ит обращения сюда."""
+    # Сюда бы надо очередь, логи, оркестратора и т.д.
+    print(f"[support/process] Получено обращение от {request.user_id}: {request.user_message[:100]}...")
+    return request
+
+# --- Симулятор: старт/стоп/статус ---
+@r.post("/simulate/start")
+async def simulate_start():
+    started = await simulation_manager.start_simulation()
+    if not started:
+        return {"status": "already_running"}
+    return {"status": "started"}
+
+@r.post("/simulate/stop")
+async def simulate_stop():
+    await simulation_manager.stop_simulation()
+    return {"status": "stopped"}
+
+@r.get("/simulate/status")
+async def simulate_status():
+    return simulation_manager.status()

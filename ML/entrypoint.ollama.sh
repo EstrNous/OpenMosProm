@@ -1,11 +1,11 @@
 #!/bin/sh
 set -e
 
-model_url="https://huggingface.co/ilyagusev/saiga_mistral_7b_gguf/resolve/main/model-q4_k.gguf"
+model_url="https://huggingface.co/ilyagusev/saiga_mistral_7b_gguf/resolve/main/model-q4_K.gguf"
 model_dir="/root/.ollama/models"
 model_filename="model-q4_k.gguf"
 model_path="$model_dir/$model_filename"
-expected_sha256="3aa8925500d81ba2555364b611681a976c48324e3a89a5a7f457755b72e128b5"
+expected_sha256="2798f33ff63c791a21f05c1ee9a10bc95630b17225c140c197188a3d5cf32644"
 
 echo "ollama entrypoint: checking for language model..."
 mkdir -p "$model_dir"
@@ -18,11 +18,11 @@ if [ -f "$model_path" ]; then
     else
         echo "ollama entrypoint: hash mismatch! re-downloading..."
         rm "$model_path"
-        wget -o "$model_path" "$model_url"
+        wget -c -O "$model_path" --progress=bar:force "$model_url" 2>&1
     fi
 else
     echo "ollama entrypoint: model file not found. downloading..."
-    wget -o "$model_path" "$model_url"
+    wget -c -O "$model_path" --progress=bar:force "$model_url" 2>&1
 fi
 
 final_sha256=$(sha256sum "$model_path" | awk '{print $1}')
