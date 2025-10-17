@@ -2,6 +2,8 @@ import os
 import httpx
 from fastapi import APIRouter, Body, HTTPException, status
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from ML.app.schemas.agent_schemas import PromptRequest, SimpleAnswer
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -10,10 +12,10 @@ r = APIRouter()
 
 ML_API_URL = os.getenv('ML_API_URL')
 
-@r.post("/test-ml")
-async def test_func(request: str = Body(..., embed=True)):
+@r.post("/test-ml",response_model=SimpleAnswer)
+async def test_func(request: PromptRequest):
     ml_request = {
-        "prompt": request
+        "prompt": request.prompt
     }
     try:
         async with httpx.AsyncClient() as client:
