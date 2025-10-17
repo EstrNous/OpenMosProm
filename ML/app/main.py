@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.routers import agent
+from .api.routers import agent
 
 app = FastAPI(title="ML Service API")
 
