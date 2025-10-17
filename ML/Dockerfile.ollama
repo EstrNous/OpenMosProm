@@ -1,0 +1,8 @@
+from ollama/ollama
+
+copy ./Modelfile /Modelfile
+copy ./entrypoint.ollama.sh /entrypoint.ollama.sh
+
+run chmod +x /entrypoint.ollama.sh
+
+entrypoint ["/entrypoint.ollama.sh"]
