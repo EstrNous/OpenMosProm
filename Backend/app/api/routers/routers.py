@@ -1,9 +1,10 @@
 import os
 import httpx
+from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, status, WebSocket
 from dotenv import load_dotenv
-from ..schemas import PromptRequest, SimpleAnswer, SupportRequest
-from ..services import simulation_manager
+from Backend.app.schemas import PromptRequest, SimpleAnswer, SupportRequest
+from Backend.app.services import simulation_manager
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -56,3 +57,7 @@ async def simulate_stop():
 @r.get("/simulate/status")
 async def simulate_status():
     return simulation_manager.status()
+
+@r.get("/statistic")
+async def get_counts_of_tickets():
+    return {"message": "Обратился к Витале"}
