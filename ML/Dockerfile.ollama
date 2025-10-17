@@ -1,5 +1,7 @@
 from ollama/ollama
 
+run apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
 copy ./Modelfile /Modelfile
 copy ./entrypoint.ollama.sh /entrypoint.ollama.sh
 
