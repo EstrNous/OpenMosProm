@@ -1,29 +1,18 @@
-from typing import Optional, Literal, Dict, Any
-from fastapi import APIRouter, HTTPException, Body, Depends
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, status, Body
 import logging
 
-from Backend.app.crud import base_crud
-from Backend.app.db.models import Ticket, Tool
-from Backend.app.db.session import get_db
+from ...crud import base_crud
+from ...schemas import MLCallback
+from ...db.models import Ticket, Tool
+from ...db.session import get_db
+
 
 logger = logging.getLogger("ml-callback")
 router = APIRouter(prefix="/api/ml", tags=["ML"])
-
 db = get_db()
 
-class MLCallback(BaseModel):
-    """
-    Общая структура callback'а от ML.
-    Ожидаем, что ML пришлёт ticket_id (наш dialog_id), action_type и payload.
-    """
-    ticket_id: int = Field(..., description="ID тикета (в нашей системе это dialog_id)")
-    action_type: Literal["answer", "escalate", "call_tool"] = Field(..., description="Действие, которое предлагает ML")
-    payload: Optional[Dict[str, Any]] = Field(None, description="Содержимое результата — зависит от action_type")
-    user_query: Optional[str] = Field(None, description="Оригинальный вопрос пользователя")
 
-
+# Пока заглушки
 @router.post(
     "/tickets/result",
     summary="Callback от ML: результат обработки тикета",
@@ -35,7 +24,7 @@ ML вызывает этот endpoint, чтобы сообщить резуль�
 - `escalate` — ML просит эскалации
 - `call_tool` — ML просит выполнить инструмент
 
-В теле обязательно `ticket_id` (в нашей модели это dialog_id).
+По умолчанию, если `solved=true`, тикет будет закрыт.
 """,
 )
 async def ticket_result(payload: MLCallback = Body(
