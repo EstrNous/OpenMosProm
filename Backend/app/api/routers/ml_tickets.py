@@ -2,23 +2,14 @@
 import os
 from fastapi import APIRouter, HTTPException, status, Body
 from typing import Optional
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from pydantic import BaseModel, Field
-from ..schemas import EnqueueIn, DequeueOut, ResultIn, EnqueueResponse, DequeueResponse
-from ..services.ticket_queue import ticket_queue
-from Backend.crud import base_crud
+from Backend.app.schemas import EnqueueIn, ResultIn, EnqueueResponse, DequeueResponse
+from Backend.app.services.ticket_queue import ticket_queue
 from Backend.db.models import Ticket as TicketModel
-
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./backend.db")
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+from Backend.db.session import get_db
 
 
 router = APIRouter(prefix="/api/ml", tags=["ML"])
-
+db = get_db()
 
 @router.post(
     "/tickets/enqueue",
@@ -45,7 +36,8 @@ async def dequeue_ticket(worker_id: Optional[str] = None):
     ticket_id = await ticket_queue.dequeue(worker_id=worker_id, wait=True, timeout=1.0)
     if ticket_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No tickets available")
-    db = SessionLocal()
+
+    # Обращение к БД
     try:
         t = db.query(TicketModel).filter(TicketModel.id == ticket_id).first()
         if not t:

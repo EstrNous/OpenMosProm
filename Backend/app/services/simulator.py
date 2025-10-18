@@ -3,7 +3,7 @@ import os
 import random
 import httpx
 from datetime import datetime
-from typing import List
+
 import aiofiles
 
 

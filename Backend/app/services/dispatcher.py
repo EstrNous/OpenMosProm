@@ -1,23 +1,16 @@
-# Backend/services/dispatcher.py
 import os
 import asyncio
 import logging
-import time
-from typing import Optional, Dict, Any
+
+from typing import Optional
 
 import httpx
 
 from .ticket_queue import ticket_queue
 from Backend.crud import base_crud
 from Backend.db.models import Ticket as TicketModel
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from Backend.db.session import get_db
 
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./backend.db")
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 logger = logging.getLogger("dispatcher")
 
@@ -76,7 +69,7 @@ class Dispatcher:
         При ошибке заново отправляет в очередь.
         """
         try:
-            db = SessionLocal()
+            db = get_db()
             try:
                 ticket = db.query(TicketModel).filter(TicketModel.id == ticket_id).first()
                 if not ticket:

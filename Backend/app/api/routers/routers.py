@@ -1,19 +1,21 @@
 import os
-import time
 import httpx
-from sqlalchemy.orm import Session
+
 from fastapi import APIRouter, HTTPException, status, Body
 from dotenv import load_dotenv
 from Backend.app.schemas import PromptRequest, SimpleAnswer, SupportRequest, SupportResponse
 from Backend.app.services import simulation_manager
+from Backend.app.services.ticket_queue import ticket_queue
+from Backend.crud import base_crud
 from Backend.crud.base_crud import get_ticket_times, get_tickets_by_status
+from Backend.db.session import get_db
 
 # Загружаем переменные окружения
 load_dotenv()
 
 r = APIRouter(tags=["Support"])
 
-db = Session # Здесь будет ссылка на сесиию постгре из .env преположительно
+db = get_db()
 ML_API_URL = os.getenv('ML_API_URL')
 
 
@@ -70,7 +72,6 @@ async def process_support_request(
     """Обработка входящего обращения: создание диалога, сообщения и тикета и добавление его в очередь."""
     print(f"[support/process] Получено обращение от {request.user_id}: {request.user_message[:200]}...")
 
-    db = SessionLocal()
     try:
         # 1) Создаём диалог
         dialog = base_crud.create_dialog(db, session_id=f"{request.user_id}-{request.timestamp}")

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from Backend.app.api.routers.routers import r as test_router
-from .routers.ml_tickets import router as ticket_router
+from Backend.app.api.routers.ml_tickets import router as ticket_router
 from fastapi.middleware.cors import CORSMiddleware
 
 from .services.ticket_queue import ticket_queue

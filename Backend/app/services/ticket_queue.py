@@ -3,22 +3,16 @@ import asyncio
 import os
 import time
 from typing import Optional, Dict, Any
-from datetime import datetime, timezone
+from Backend.db.session import get_db
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from Backend.db.models import Ticket
 from Backend.crud import base_crud
-
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./backend.db")
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
 # Конфиги
 VISIBILITY_TIMEOUT = int(os.getenv("TICKET_VISIBILITY_TIMEOUT", "60"))  # сек
 REQUEUE_CHECK_PERIOD = float(os.getenv("TICKET_REQUEUE_CHECK_PERIOD", "5.0"))  # сек
+db = get_db()
 
 class InMemoryTicketQueue:
     def __init__(self):
@@ -48,7 +42,6 @@ class InMemoryTicketQueue:
 
     async def _preload_open_tickets_from_db(self):
         """Подгружаем open тикеты из БД (порядок по возрастанию даты создания)."""
-        db = SessionLocal()
         try:
             qs = db.query(Ticket).filter(Ticket.status == "open").order_by(Ticket.created_at.asc()).all()
             for t in qs:
@@ -61,7 +54,6 @@ class InMemoryTicketQueue:
         Создаёт тикет в БД и ставит его в очередь.
         Возвращает ticket_id.
         """
-        db = SessionLocal()
         try:
             ticket = base_crud.create_ticket(db, dialog_id=dialog_id, type=type)
             ticket_id = ticket.id
@@ -92,7 +84,6 @@ class InMemoryTicketQueue:
             self._in_progress[ticket_id] = {"worker": worker_id or "anon", "ts": time.time()}
 
         # обновим статус в БД в отдельной подсессии
-        db = SessionLocal()
         try:
             t = db.query(Ticket).filter(Ticket.id == ticket_id).first()
             if t:
@@ -118,7 +109,6 @@ class InMemoryTicketQueue:
                 pass
 
         # Обновление в БД
-        db = SessionLocal()
         try:
             ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
             if not ticket:
@@ -166,7 +156,6 @@ class InMemoryTicketQueue:
 
                 # вернуть в очередь и обновить статус в БД
                 if to_requeue:
-                    db = SessionLocal()
                     try:
                         for tid in to_requeue:
                             await self._q.put(tid)
