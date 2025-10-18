@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal, Dict, Any
 from pydantic import BaseModel, Field
 
 class PromptRequest(BaseModel):
@@ -71,3 +71,14 @@ class DequeueResponse(BaseModel):
     ticket_id: int = Field(..., description="ID тикета")
     dialog_id: Optional[int] = Field(None, description="ID диалога")
     status: str = Field(..., description="Статус тикета")
+
+
+class MLCallback(BaseModel):
+    """
+    Общая структура callback'а от ML.
+    Ожидаем, что ML пришлёт ticket_id (наш dialog_id), action_type и payload.
+    """
+    ticket_id: int = Field(..., description="ID тикета (в нашей системе это dialog_id)")
+    action_type: Literal["answer", "escalate", "call_tool"] = Field(..., description="Действие, которое предлагает ML")
+    payload: Optional[Dict[str, Any]] = Field(None, description="Содержимое результата — зависит от action_type")
+    user_query: Optional[str] = Field(None, description="Оригинальный вопрос пользователя")
