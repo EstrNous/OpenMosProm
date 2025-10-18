@@ -8,6 +8,11 @@ from ..db.models import Ticket
 from ..crud import base_crud
 from ..db.session import SessionLocal
 
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения
+load_dotenv()
+
 ML_API_URL = os.getenv("ML_API_URL")
 ML_API_TICKET_ENDPOINT = os.getenv("ML_API_TICKET_ENDPOINT", "/submit-task")
 ML_SEND_TIMEOUT = float(os.getenv("ML_SEND_TIMEOUT", "10.0"))
