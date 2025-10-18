@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from datetime import datetime
 from ..db.models import (
-    Dialog, Message, Ticket, Feedback, Tool, ToolInvocation, Log
+    Dialog, Message, Feedback, Tool, ToolInvocation, Log
 )
 
 def create_dialog(db: Session, session_id: str) -> Dialog:
@@ -26,6 +26,36 @@ def update_dialog_status(db: Session, dialog_id: int, status: str) -> Dialog | N
         db.refresh(dialog)
     return dialog
 
+def close_dialog(db: Session, dialog_id: int, type: str | None = None) -> Dialog | None:
+    dialog = db.query(Dialog).filter(Dialog.id == dialog_id).first()
+    if dialog:
+        dialog.status = "closed"
+        dialog.type = type
+        dialog.resolved_at = datetime.now()
+        dialog.updated_at = datetime.now()
+        db.commit()
+        db.refresh(dialog)
+    return dialog
+
+def get_dialogs_by_status(db: Session, status: str | None = None) -> list[Dialog]:
+    query = db.query(Dialog)
+    if status and status.lower() != "all":
+        query = query.filter(Dialog.status == status)
+    return query.order_by(Dialog.created_at.desc()).all()
+
+def get_dialogs_by_type(db: Session, dialog_type: str) -> list[Dialog]:
+    return db.query(Dialog).filter(Dialog.type == dialog_type).all()
+
+def get_dialog_times(db: Session, dialog_id: int) -> dict | None:
+    dialog = db.query(Dialog).filter(Dialog.id == dialog_id).first()
+    if not dialog:
+        return None
+    return {
+        "id": dialog.id,
+        "created_at": dialog.created_at,
+        "resolved_at": dialog.resolved_at
+    }
+
 def create_message(db: Session, dialog_id: int, content: str) -> Message:
     message = Message(dialog_id=dialog_id, content=content)
     db.add(message)
@@ -33,50 +63,8 @@ def create_message(db: Session, dialog_id: int, content: str) -> Message:
     db.refresh(message)
     return message
 
-
 def get_messages_by_dialog(db: Session, dialog_id: int) -> list[Message]:
     return db.query(Message).filter(Message.dialog_id == dialog_id).order_by(Message.timestamp).all()
-
-def create_ticket(db: Session, dialog_id: int, type: str | None = None) -> Ticket:
-    ticket = Ticket(dialog_id=dialog_id, type=type)
-    db.add(ticket)
-    db.commit()
-    db.refresh(ticket)
-    return ticket
-
-
-def close_ticket(db: Session, dialog_id: int, type: str | None = None) -> Ticket | None:
-    ticket = db.query(Ticket).filter(Ticket.dialog_id == dialog_id).first()
-    if ticket:
-        ticket.status = "closed"
-        ticket.type = type
-        ticket.resolved_at = datetime.now()
-        db.add(ticket)
-        db.commit()
-        db.refresh(ticket)
-    return ticket
-
-def get_tickets_by_status(db: Session, status: str | None = None) -> list[Ticket]:
-    query = db.query(Ticket)
-
-    if status and status.lower() != "all":
-        query = query.filter(Ticket.status == status)
-
-    return query.order_by(Ticket.created_at.desc()).all()
-
-def get_tickets_by_type(db: Session, ticket_type: str) -> list[Ticket]:
-    return db.query(Ticket).filter(Ticket.type == ticket_type).all()
-
-def get_ticket_times(db: Session, dialog: Ticket) -> dict | None:
-
-    if not dialog:
-        return None
-
-    return {
-        "id": dialog.dialog_id,
-        "created_at": dialog.created_at,
-        "resolved_at": dialog.resolved_at
-    }
 
 def create_feedback(db: Session, dialog_id: int, rating: int, comment: str | None = None) -> Feedback:
     feedback = Feedback(dialog_id=dialog_id, rating=rating, comment=comment)
@@ -112,15 +100,14 @@ def create_tool_invocation(db: Session, tool_id: int, dialog_id: int, parameters
     db.refresh(invocation)
     return invocation
 
+def get_all_tool_invocations(db: Session):
+    return db.query(ToolInvocation).all()
 
 def get_invocations_by_dialog(db: Session, dialog_id: int) -> list[ToolInvocation]:
     return db.query(ToolInvocation).filter(ToolInvocation.dialog_id == dialog_id).all()
 
 
 def get_tool_invocations(db: Session, tool_id: int):
-    """
-    Возвращает запрос для получения всех вызовов инструмента по tool_id.
-    """
     return db.query(ToolInvocation).filter(ToolInvocation.tool_id == tool_id)
 
 

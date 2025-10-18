@@ -12,11 +12,12 @@ class Dialog(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String, unique=True, nullable=False)
     status = Column(Enum("active", "closed", "escalated", name="dialog_status"), default="active")
+    type = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
+    resolved_at = Column(DateTime, nullable=True)
 
     messages = relationship("Message", back_populates="dialog")
-    ticket = relationship("Ticket", back_populates="dialog", uselist=False, cascade="all, delete-orphan")
     feedback = relationship("Feedback", back_populates="dialog", uselist=False)
     tool_invocations = relationship("ToolInvocation", back_populates="dialog")
 
@@ -30,17 +31,6 @@ class Message(Base):
     is_relevant = Column(Boolean, default=True)
 
     dialog = relationship("Dialog", back_populates="messages")
-
-class Ticket(Base):
-    __tablename__ = "tickets"
-
-    dialog_id = Column(Integer, ForeignKey("dialogs.id", ondelete="CASCADE"), primary_key=True)
-    status = Column(Enum("solved", "in_progress", "escalated", name="ticket_status"), default="in_progress")
-    created_at = Column(DateTime, default=datetime.now)
-    resolved_at = Column(DateTime, nullable=True)
-    type = Column(String, nullable=True)
-
-    dialog = relationship("Dialog", back_populates="ticket")
 
 class Feedback(Base):
     __tablename__ = "feedback"
