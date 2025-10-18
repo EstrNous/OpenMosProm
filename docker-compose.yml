@@ -1,4 +1,14 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
   backend:
     build:
       context: ./Backend
@@ -22,7 +32,6 @@ services:
       - ml-rag-db:/app/db
     depends_on:
       - redis
-      - ollama
     networks:
       - app-network
 
@@ -34,20 +43,20 @@ services:
   ml-api:
     build:
       context: ./ML
-      dockerfile: Dockerfile
     volumes:
       - ml-rag-db:/app/db
     ports:
       - "8001:8001"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
     env_file:
       - .env
     depends_on:
-      - ollama
       - redis
     networks:
       - app-network
 
   ollama:
+    profiles: ["llm"]
     build:
       context: ./ML
       dockerfile: Dockerfile.ollama

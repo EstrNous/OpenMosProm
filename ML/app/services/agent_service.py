@@ -1,10 +1,12 @@
 import logging
-from typing import Dict, Any
 import time
-import os
+from typing import Dict, Any, List
 
 from .llm_service import LLMService
 from .rag_service import RAGService
+from .classifier_service import ClassifierService
+import os
+
 from ..schemas.agent_schemas import SourceNode
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -13,72 +15,68 @@ RAG_CONFIDENCE_THRESHOLD = float(os.getenv("RAG_CONFIDENCE_THRESHOLD", 0.65))
 
 
 class AgentService:
-    def __init__(self, llm_service: LLMService, rag_service: RAGService):
+    def __init__(self, llm_service: LLMService, rag_service: RAGService, classifier_service: ClassifierService):
         self._llm_service = llm_service
         self._rag_service = rag_service
+        self._classifier_service = classifier_service
 
     def process_query(self, user_query: str) -> Dict[str, Any]:
-        logging.info(f"--- Начало обработки запроса: '{user_query}' ---")
+        logging.info(f"--- Начало быстрой обработки запроса: '{user_query}' ---")
         start_time = time.time()
 
-        rag_start_time = time.time()
-        sources = self._rag_service.query(user_query)
-        rag_duration = time.time() - rag_start_time
+        category = self._classifier_service.predict(user_query)
+        logging.info(f"Запрос классифицирован как: '{category}'")
 
-        if not sources:
-            logging.warning("RAG не вернул источников. Переход к эскалации.")
-            return self._escalate(user_query, "Не найдено релевантных документов в базе знаний.", start_time,
-                                  rag_duration)
+        if category == "Мусор":
+            logging.info("Категория 'Мусор', немедленная эскалация.")
+            return self._escalate(
+                user_query=user_query,
+                reason="Запрос классифицирован как нерелевантный.",
+                category=category,
+                start_time=start_time
+            )
 
-        highest_score = max(source['score'] for source in sources)
-        logging.info(f"Наивысшая оценка релевантности: {highest_score:.2f}")
+        sources: List[SourceNode] = self._rag_service.query(user_query)
 
-        if highest_score < RAG_CONFIDENCE_THRESHOLD:
-            logging.warning(
-                f"Оценка релевантности ({highest_score:.2f}) ниже порога ({RAG_CONFIDENCE_THRESHOLD}). Эскалация.")
-            return self._escalate(user_query,
-                                  f"Недостаточная уверенность в найденных документах (score: {highest_score:.2f}).",
-                                  start_time, rag_duration)
+        if sources and sources[0].score >= RAG_CONFIDENCE_THRESHOLD:
+            logging.info(f"Найдено релевантное решение в Базе Знаний (score: {sources[0].score:.2f}).")
 
-        filtered_sources = [source for source in sources if source['score'] >= RAG_CONFIDENCE_THRESHOLD]
+            best_source = sources[0]
+            processing_time = time.time() - start_time
 
-        logging.info("Найдена релевантная информация. Генерация ответа...")
-        context = "\n---\n".join([source['text'] for source in filtered_sources])
-
-        llm_start_time = time.time()
-        final_answer = self._llm_service.get_rag_based_answer(user_query, context)
-        llm_duration = time.time() - llm_start_time
-
-        total_duration = time.time() - start_time
-        logging.info("Ответ сгенерирован. Формирование финального результата.")
-        return {
-            "action_type": "answer",
-            "payload": {
-                "answer_text": final_answer,
-                "sources": [SourceNode(**s) for s in filtered_sources]
-            },
-            "metadata": {
-                "total_duration_sec": round(total_duration, 2),
-                "rag_duration_sec": round(rag_duration, 2),
-                "llm_duration_sec": round(llm_duration, 2)
+            return {
+                "action_type": "answer",
+                "payload": {
+                    "category": category,
+                    "summary": best_source.text,
+                    "sources": sources
+                },
+                "metadata": {
+                    "processing_time_sec": round(processing_time, 2)
+                }
             }
-        }
+        else:
+            logging.info("В Базе Знаний не найдено подходящего решения. Эскалация.")
+            return self._escalate(
+                user_query=user_query,
+                reason="Релевантное решение в Базе Знаний не найдено.",
+                category=category,
+                start_time=start_time
+            )
 
     @staticmethod
-    def _escalate(user_query: str, reason: str, start_time: float, rag_duration: float) -> Dict[str, Any]:
-        logging.info("Формирование ответа для эскалации...")
-        summary = f"Пользователь спросил: '{user_query}'. Агент не смог найти ответ."
-        total_duration = time.time() - start_time
+    def _escalate(user_query: str, reason: str, category: str, start_time: float) -> Dict[str, Any]:
+        processing_time = time.time() - start_time
+        summary = f"Запрос отнесен к категории '{category}'. Требуется ручная обработка."
+
         return {
             "action_type": "escalate",
             "payload": {
-                "reason": reason,
+                "category": category,
                 "summary": summary,
-                "final_message_for_user": "К сожалению, я не смог найти точный ответ на ваш вопрос. Передаю ваше обращение специалисту."
+                "reason": reason
             },
             "metadata": {
-                "total_duration_sec": round(total_duration, 2),
-                "rag_duration_sec": round(rag_duration, 2),
-                "llm_duration_sec": None
+                "processing_time_sec": round(processing_time, 2)
             }
         }

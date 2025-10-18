@@ -41,19 +41,20 @@ class RAGService:
     def query(self, user_query: str) -> List[SourceNode]:
         logging.info(f"Выполняется RAG-поиск по запросу: '{user_query}'")
 
-        source_nodes = self.retriever.retrieve(user_query)
+        nodes_with_scores = self.retriever.retrieve(user_query)
 
-        if not source_nodes:
+        if not nodes_with_scores:
             logging.warning("Релевантных документов не найдено.")
             return []
 
         results = []
-        for node in source_nodes:
-            results.append({
-                "text": node.get_content(),
-                "score": node.get_score(),
-                "filename": node.metadata.get("file_name", "N/A"),
-            })
+        for node in nodes_with_scores:
+            source_node = SourceNode(
+                text=node.get_content(),
+                score=node.get_score(),
+                filename=node.metadata.get("file_name", "N/A"),
+            )
+            results.append(source_node)
 
         logging.info(f"Найдено {len(results)} релевантных источников.")
         return results

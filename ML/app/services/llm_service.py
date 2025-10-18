@@ -13,6 +13,9 @@ class LLMService:
     def __init__(self, llm: OpenAI):
         self._llm = llm
 
+    def is_available(self) -> bool:
+        return self._llm is not None
+
     @staticmethod
     def _send_request(prompt: str) -> str:
         if not OLLAMA_URL:
@@ -38,6 +41,8 @@ class LLMService:
             return "Извините, сервис LLM временно недоступен."
 
     def get_simple_response(self, prompt: str) -> str:
+        if not self.is_available():
+            return "LLM сервис не сконфигурирован."
         return self._send_request(prompt)
 
     def get_rag_based_answer(self, user_query: str, context: str) -> str:

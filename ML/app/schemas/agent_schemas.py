@@ -29,23 +29,22 @@ class AgentQueryRequest(BaseModel):
 
 
 class AnswerPayload(BaseModel):
-    answer_text: str
+    category: str
+    summary: str
     sources: List[SourceNode]
 
 
 class EscalatePayload(BaseModel):
-    reason: str
+    category: str
     summary: str
-    final_message_for_user: str
+    reason: str
 
 
 class MetaData(BaseModel):
-    total_duration_sec: float
-    rag_duration_sec: float
-    llm_duration_sec: float | None = None
+    processing_time_sec: float
 
 
 class AgentQueryResponse(BaseModel):
     action_type: str
     payload: Union[AnswerPayload, EscalatePayload]
-    metadata: MetaData | None = None
+    metadata: MetaData
