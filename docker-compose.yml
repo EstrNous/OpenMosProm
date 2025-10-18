@@ -19,6 +19,8 @@ services:
     depends_on:
       - ml-api
       - postgres
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@postgres:5432/support_db
     networks:
       - app-network
 
@@ -77,6 +79,11 @@ services:
 
   postgres:
     image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: support_db
     volumes:
       - postgres-data:/var/lib/postgresql/data
     env_file:

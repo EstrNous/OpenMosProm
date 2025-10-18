@@ -1,6 +1,8 @@
 from fastapi import FastAPI
-from .routers.routers import r as test_router
+from .api.routers.routers import r as test_router
+from .api.routers.ml_tickets import router as ticket_router
 from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 
@@ -15,3 +17,4 @@ app.add_middleware(
 )
 
 app.include_router(test_router)
+app.include_router(ticket_router)
