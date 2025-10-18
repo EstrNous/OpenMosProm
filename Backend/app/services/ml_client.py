@@ -10,7 +10,6 @@ from ..db.session import SessionLocal
 
 from dotenv import load_dotenv
 
-# Загружаем переменные окружения
 load_dotenv()
 
 ML_API_URL = os.getenv("ML_API_URL", "http://ml-api:8001")
