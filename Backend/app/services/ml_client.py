@@ -9,7 +9,7 @@ from ..crud import base_crud
 from ..db.session import SessionLocal
 
 ML_API_URL = os.getenv("ML_API_URL")
-ML_API_TICKET_ENDPOINT = os.getenv("ML_API_TICKET_ENDPOINT", "/api/agent/process_ticket")
+ML_API_TICKET_ENDPOINT = os.getenv("ML_API_TICKET_ENDPOINT", "/submit-task")
 ML_SEND_TIMEOUT = float(os.getenv("ML_SEND_TIMEOUT", "10.0"))
 ML_MAX_RETRIES = int(os.getenv("ML_MAX_RETRIES", "2"))
 ML_RETRY_BASE_DELAY = float(os.getenv("ML_RETRY_BASE_DELAY", "1.0"))
@@ -52,7 +52,7 @@ async def send_ticket_to_ml(dialog_id: int) -> None:
         logger.error("send_ticket_to_ml: ML_API_URL not configured; dialog %s not sent", dialog_id)
         return
 
-    url = ML_API_URL.rstrip("/") + ML_API_TICKET_ENDPOINT
+    url = f"{ML_API_URL}/api/agent/{ML_API_TICKET_ENDPOINT}"
 
     attempt = 0
     while attempt <= ML_MAX_RETRIES:
