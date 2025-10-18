@@ -1,0 +1,13 @@
+ML/venv/
+Backend/venv/
+/ML/db/
+
+.vscode/
+.idea/
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+.env

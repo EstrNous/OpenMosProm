@@ -1,0 +1,103 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./Backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - ml-api
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@postgres:5432/support_db
+    networks:
+      - app-network
+
+  ml-worker:
+    build:
+      context: ./ML
+    command: celery -A app.celery_worker.celery_app worker --loglevel=info -c 1
+    env_file:
+      - .env
+    volumes:
+      - ml-rag-db:/app/db
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:8-alpine
+    networks:
+      - app-network
+
+  ml-api:
+    build:
+      context: ./ML
+    volumes:
+      - ml-rag-db:/app/db
+    ports:
+      - "8001:8001"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  ollama:
+    profiles: ["llm"]
+    build:
+      context: ./ML
+      dockerfile: Dockerfile.ollama
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+    # если есть gpu - раскомментировать
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: support_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  ollama-data:
+  postgres-data:
+  ml-rag-db:
