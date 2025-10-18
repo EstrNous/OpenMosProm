@@ -81,7 +81,7 @@ async def process_support_request(
         asyncio.create_task(send_ticket_to_ml(ticket_id))
 
     # Возвращаем ticket_id == dialog.id
-    return {"ticket_id": ticket_id, "dialog_id": dialog.id, "status": "in_processing"}
+    return {"ticket_id": ticket_id, "dialog_id": dialog.id, "status": "in_progress"}
 
 
 @r.post("/simulate/start", summary="Запустить симуляцию входящих обращений", description="Запустить фоновую задачу-симулятор, которая подаёт обращения из файла requests.txt.")
