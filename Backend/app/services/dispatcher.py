@@ -7,9 +7,9 @@ from typing import Optional
 import httpx
 
 from .ticket_queue import ticket_queue
-from Backend.crud import base_crud
-from Backend.db.models import Ticket as TicketModel
-from Backend.db.session import get_db
+from ..crud import base_crud
+from Backend.app.db.models import Ticket as TicketModel
+from Backend.app.db import get_db
 
 
 logger = logging.getLogger("dispatcher")

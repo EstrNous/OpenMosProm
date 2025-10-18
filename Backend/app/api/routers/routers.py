@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 from Backend.app.schemas import PromptRequest, SimpleAnswer, SupportRequest, SupportResponse
 from Backend.app.services import simulation_manager
 from Backend.app.services.ticket_queue import ticket_queue
-from Backend.crud import base_crud
-from Backend.crud.base_crud import get_ticket_times, get_tickets_by_status
-from Backend.db.session import get_db
+from Backend.app.crud import base_crud
+from Backend.app.crud.base_crud import get_ticket_times, get_tickets_by_status
+from Backend.app.db.session import get_db
 
 # Загружаем переменные окружения
 load_dotenv()

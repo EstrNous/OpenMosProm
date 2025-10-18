@@ -2,8 +2,8 @@ from sqlalchemy import (
     Column, Integer, String, DateTime, ForeignKey, Enum, JSON, Boolean
 )
 from datetime import datetime
-from sqlalchemy.orm import relationship, declarative_base
-from Backend.db.session import Base
+from sqlalchemy.orm import relationship
+from Backend.app.db.session import Base
 
 
 class Dialog(Base):

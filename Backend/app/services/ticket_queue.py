@@ -3,11 +3,10 @@ import asyncio
 import os
 import time
 from typing import Optional, Dict, Any
-from Backend.db.session import get_db
+from Backend.app.db.session import get_db
 
-from Backend.db.models import Ticket
-from Backend.crud import base_crud
-
+from Backend.app.db.models import Ticket
+from Backend.app.crud import base_crud
 
 # Конфиги
 VISIBILITY_TIMEOUT = int(os.getenv("TICKET_VISIBILITY_TIMEOUT", "60"))  # сек

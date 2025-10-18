@@ -1,5 +1,5 @@
-from Backend.db.session import engine, Base
-from Backend.db.models import *
+from .models import *
+from .session import engine
 
 print("Инициализация базы данных...")
 Base.metadata.create_all(bind=engine)
