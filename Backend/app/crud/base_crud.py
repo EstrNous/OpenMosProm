@@ -133,11 +133,3 @@ def get_logs(db: Session, event_type: str | None = None) -> list[Log]:
     if event_type:
         query = query.filter(Log.event_type == event_type)
     return query.order_by(Log.created_at.desc()).all()
-
-
-def get_tool_invocations(db: Session, tool_id: int | str = "all"):
-    query = db.query(ToolInvocation)
-    if tool_id != "all":
-        query = query.filter(ToolInvocation.tool_id == tool_id)
-
-    return query.order_by(ToolInvocation.created_at.desc()).all()

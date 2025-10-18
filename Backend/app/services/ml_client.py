@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # Загружаем переменные окружения
 load_dotenv()
 
-ML_API_URL = os.getenv("ML_API_URL")
+ML_API_URL = os.getenv("ML_API_URL", "http://ml-api:8001")
 ML_API_TICKET_ENDPOINT = os.getenv("ML_API_TICKET_ENDPOINT", "/submit-task")
 ML_SEND_TIMEOUT = float(os.getenv("ML_SEND_TIMEOUT", "10.0"))
 ML_MAX_RETRIES = int(os.getenv("ML_MAX_RETRIES", "2"))
@@ -28,16 +28,12 @@ async def _build_payload_for_dialog(dialog_id: int) -> Dict[str, Any]:
         if not ticket:
             return {}
         try:
-            msgs = base_crud.get_messages_by_dialog(db, ticket.dialog_id)
-            messages = [{"id": m.id, "content": m.content, "timestamp": str(m.timestamp)} for m in msgs]
+            msg = base_crud.get_messages_by_dialog(db, ticket.dialog_id)[0].content
         except Exception:
-            messages = []
+            msg = ""
         payload = {
-            "ticket_id": ticket.dialog_id,  # именно dialog_id выступает как ticket identifier
-            "dialog_id": ticket.dialog_id,
-            "ticket_type": getattr(ticket, "type", None),
-            "created_at": str(ticket.created_at),
-            "messages": messages,
+            "user_query": msg,
+            "ticket_id": ticket.dialog_id
         }
         return payload
     finally:
@@ -57,7 +53,7 @@ async def send_ticket_to_ml(dialog_id: int) -> None:
         logger.error("send_ticket_to_ml: ML_API_URL not configured; dialog %s not sent", dialog_id)
         return
 
-    url = f"{ML_API_URL}/api/agent/{ML_API_TICKET_ENDPOINT}"
+    url = f"{ML_API_URL}/api/v1/agent/{ML_API_TICKET_ENDPOINT}"
 
     attempt = 0
     while attempt <= ML_MAX_RETRIES:
