@@ -24,7 +24,15 @@ class RAGService:
         logging.info("Инициализация RAGService...")
 
         db = chromadb.PersistentClient(path=DB_DIR)
-        chroma_collection = db.get_collection(COLLECTION_NAME)
+
+        try:
+            chroma_collection = db.get_collection(COLLECTION_NAME)
+            logging.info(f"Коллекция '{COLLECTION_NAME}' найдена.")
+        except Exception as e:
+            logging.warning(f"Коллекция '{COLLECTION_NAME}' не найдена: {e}")
+            logging.info("Создаю пустую коллекцию. Запустите индексацию для заполнения базы знаний.")
+            chroma_collection = db.get_or_create_collection(COLLECTION_NAME)
+
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 
         self.index = VectorStoreIndex.from_vector_store(

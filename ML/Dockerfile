@@ -10,5 +10,9 @@ COPY ./app /app/app
 COPY ./indexer.py /app/indexer.py
 COPY ./knowledge_base /app/knowledge_base
 COPY ./app/models/classifier.joblib /app/app/models/classifier.joblib
+COPY ./entrypoint.sh /app/entrypoint.sh
 
+RUN chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -4,7 +4,10 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-RUN git clone https://github.com/AnyaZhuk/hacaton-17-19-frontend.git .
+ARG CACHEBUST=1
+
+RUN git clone https://github.com/AnyaZhuk/hacaton-17-19-frontend.git . && \
+    echo "Cache bust: ${CACHEBUST}"
 
 RUN npm install
 

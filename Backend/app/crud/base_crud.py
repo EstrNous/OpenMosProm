@@ -116,6 +116,14 @@ def create_tool_invocation(db: Session, tool_id: int, dialog_id: int, parameters
 def get_invocations_by_dialog(db: Session, dialog_id: int) -> list[ToolInvocation]:
     return db.query(ToolInvocation).filter(ToolInvocation.dialog_id == dialog_id).all()
 
+
+def get_tool_invocations(db: Session, tool_id: int):
+    """
+    Возвращает запрос для получения всех вызовов инструмента по tool_id.
+    """
+    return db.query(ToolInvocation).filter(ToolInvocation.tool_id == tool_id)
+
+
 def create_log(db: Session, event_type: str, dialog_id: int | None = None, success: bool = True, details: dict | None = None) -> Log:
     log = Log(
         event_type=event_type,
