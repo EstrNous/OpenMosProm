@@ -1,14 +1,15 @@
 import os
 import httpx
 
-from fastapi import APIRouter, HTTPException, status, Body
+from fastapi import APIRouter, HTTPException, status, Body, BackgroundTasks
 from dotenv import load_dotenv
 from Backend.app.schemas import PromptRequest, SimpleAnswer, SupportRequest, SupportResponse
 from Backend.app.services import simulation_manager
-from Backend.app.services.ticket_queue import ticket_queue
 from Backend.app.crud import base_crud
 from Backend.app.crud.base_crud import get_ticket_times, get_tickets_by_status
+
 from Backend.app.db.session import get_db
+from ...services.ml_client import send_ticket_to_ml
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -32,7 +33,7 @@ async def test_func(request: PromptRequest = Body(..., examples={
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{ML_API_URL}/api/v1/agent/test-prompt",
+                f"{ML_API_URL}/api/agent/test-prompt",
                 json=ml_request,
                 timeout=90.0
             )
@@ -48,51 +49,37 @@ async def test_func(request: PromptRequest = Body(..., examples={
 @r.post(
     "/support/process",
     response_model=SupportResponse,
-    summary="Принять обращение пользователя, создать тикет и поставить его в очередь",
-    description="""
-Принимает обращение от пользователя, создаёт Dialog, Message и Ticket в БД, а затем ставит тикет в оперативную очередь для дальнейшей обработки диспетчером.
-""",
+    summary="Принять обращение пользователя и поставить в обработку",
+    description="Создаёт Dialog/Message/Ticket в БД и асинхронно отправляет тикет в ML."
 )
 async def process_support_request(
-    request: SupportRequest = Body(
-        ...,
-        examples={
-            "web": {
-                "summary": "Пример обращения из веб-интерфейса",
-                "value": {
-                    "user_message": "Не могу войти в почту, пишет неправильный пароль",
-                    "user_id": "user_vitalka",
-                    "timestamp": "2025-10-18T12:00:00",
-                    "channel": "web"
-                }
-            }
-        }
-    )
+    request: SupportRequest = Body(...),
+    background_tasks: BackgroundTasks = None,
 ):
-    """Обработка входящего обращения: создание диалога, сообщения и тикета и добавление его в очередь."""
+    """
+    Создаёт dialog, message и ticket, возвращает ticket_id (который равен dialog_id),
+    и запускает BackgroundTask для отправки в ML.
+    """
     print(f"[support/process] Получено обращение от {request.user_id}: {request.user_message[:200]}...")
 
     try:
-        # 1) Создаём диалог
         dialog = base_crud.create_dialog(db, session_id=f"{request.user_id}-{request.timestamp}")
-        # 2) Создаём сообщение
         base_crud.create_message(db, dialog_id=dialog.id, content=request.user_message)
-        # 3) Создаём тикет в БД
-        ticket = base_crud.create_ticket(db, dialog_id=dialog.id, type=None)
-        ticket_id = ticket.id
+        base_crud.create_ticket(db, dialog_id=dialog.id, type=None)
+
+        ticket_id = dialog.id
     except Exception as e:
         print(f"[support/process] Ошибка при создании тикета: {e}")
         raise HTTPException(status_code=500, detail="error creating ticket")
-    finally:
-        db.close()
 
-    try:
-        await ticket_queue.enqueue_existing(ticket_id)
-    except Exception as e:
-        # очередь недоступна — тикет в БД есть; логируем ошибку и возвращаем ответ
-        print(f"[support/process] Не удалось положить ticket {ticket_id} в очередь: {e}")
+    # запускаем фоновую задачу: передаем dialog.id
+    if background_tasks is not None:
+        background_tasks.add_task(send_ticket_to_ml, ticket_id)
+    else:
+        import asyncio
+        asyncio.create_task(send_ticket_to_ml(ticket_id))
 
-    return {"ticket_id": ticket_id, "dialog_id": dialog.id, "status": ticket.status}
+    return {"ticket_id": ticket_id, "dialog_id": dialog.id, "status": "open"}
 
 
 @r.post("/simulate/start", summary="Запустить симуляцию входящих обращений", description="Запустить фоновую задачу-симулятор, которая подаёт обращения из файла requests.txt.")
@@ -118,7 +105,7 @@ async def get_sum_of_tickets(status_t: str, db = db):
     return get_tickets_by_status(db, status_t).count()
 
 @r.get("/statistic/time_spending")
-async def spend_time(db=db):
+async def spend_time(db = db):
     time = []
     for i in range(get_tickets_by_status(db, "all").count()):
         time.append(get_ticket_times(db, i).get("resolved_at") - get_ticket_times(db, i).get("created_at"))

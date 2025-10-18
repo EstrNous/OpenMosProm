@@ -45,12 +45,13 @@ def create_ticket(db: Session, dialog_id: int, type: str | None = None) -> Ticke
     return ticket
 
 
-def close_ticket(db: Session, ticket_id: int, type: str | None = None) -> Ticket | None:
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+def close_ticket(db: Session, dialog_id: int, type: str | None = None) -> Ticket | None:
+    ticket = db.query(Ticket).filter(Ticket.dialog_id == dialog_id).first()
     if ticket:
         ticket.status = "closed"
         ticket.type = type
         ticket.resolved_at = datetime.now()
+        db.add(ticket)
         db.commit()
         db.refresh(ticket)
     return ticket
