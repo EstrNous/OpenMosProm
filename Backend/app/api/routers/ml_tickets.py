@@ -1,10 +1,9 @@
 # app/routers/ml_tickets.py
 from fastapi import APIRouter, HTTPException, status, Body
 from typing import Optional
-from Backend.app.schemas import EnqueueIn, ResultIn, EnqueueResponse, DequeueResponse
-from Backend.app.services.ticket_queue import ticket_queue
-from Backend.app.db.models import Ticket as TicketModel
-from Backend.app.db import get_db
+from ...schemas import EnqueueIn, ResultIn, EnqueueResponse, DequeueResponse
+from ...db.models import Ticket as TicketModel
+from ...db.session import get_db
 
 
 router = APIRouter(prefix="/api/ml", tags=["ML"])

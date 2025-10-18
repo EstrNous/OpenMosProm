@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from datetime import datetime
-from Backend.app.db.models import (
+from ..db.models import (
     Dialog, Message, Ticket, Feedback, Tool, ToolInvocation, Log
 )
 

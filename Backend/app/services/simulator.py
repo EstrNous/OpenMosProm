@@ -6,7 +6,6 @@ from datetime import datetime
 
 import aiofiles
 
-
 class UserSimulator:
     def __init__(self, requests_file: str, backend_url: str):
         self.requests = []

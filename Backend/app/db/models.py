@@ -3,7 +3,7 @@ from sqlalchemy import (
 )
 from datetime import datetime
 from sqlalchemy.orm import relationship
-from Backend.app.db.session import Base
+from .session import Base
 
 
 class Dialog(Base):
