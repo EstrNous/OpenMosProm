@@ -1,7 +1,7 @@
 import os
 import httpx
 
-from fastapi import APIRouter, HTTPException, status, Body, Depends
+from fastapi import APIRouter, HTTPException, status, Body, Depends, BackgroundTasks
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
@@ -52,20 +52,9 @@ async def test_func(request: PromptRequest = Body(..., examples={
     description="Создаёт Dialog/Message/Ticket в БД и асинхронно отправляет тикет в ML."
 )
 async def process_support_request(
-    request: SupportRequest = Body(
-        ...,
-        examples={
-            "web": {
-                "summary": "Пример обращения из веб-интерфейса",
-                "value": {
-                    "user_message": "Не могу войти в почту, пишет неправильный пароль",
-                    "user_id": "user_vitalka",
-                    "timestamp": "2025-10-18T12:00:00",
-                    "channel": "web"
-                }
-            }
-        }
-    ), db: Session = Depends(get_db)
+    request: SupportRequest = Body(...),
+    background_tasks: BackgroundTasks = None,
+    db: Session = Depends(get_db),
 ):
     """
     Создаёт dialog, message и ticket, возвращает ticket_id (который равен dialog_id),
@@ -74,10 +63,11 @@ async def process_support_request(
     print(f"[support/process] Получено обращение от {request.user_id}: {request.user_message[:200]}...")
 
     try:
+        # create_dialog returns Dialog with id
         dialog = base_crud.create_dialog(db, session_id=f"{request.user_id}-{request.timestamp}")
         base_crud.create_message(db, dialog_id=dialog.id, content=request.user_message)
         base_crud.create_ticket(db, dialog_id=dialog.id, type=None)
-
+        # ticket identifier in your system == dialog.id
         ticket_id = dialog.id
     except Exception as e:
         print(f"[support/process] Ошибка при создании тикета: {e}")
@@ -90,6 +80,7 @@ async def process_support_request(
         import asyncio
         asyncio.create_task(send_ticket_to_ml(ticket_id))
 
+    # Возвращаем ticket_id == dialog.id
     return {"ticket_id": ticket_id, "dialog_id": dialog.id, "status": "open"}
 
 
