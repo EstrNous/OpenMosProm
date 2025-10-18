@@ -1,6 +1,7 @@
 import requests
 import os
 from dotenv import load_dotenv
+from llama_index.llms.openai import OpenAI
 
 load_dotenv()
 
@@ -9,10 +10,16 @@ MODEL_NAME = os.getenv("MODEL_NAME")
 
 
 class LLMService:
+    def __init__(self, llm: OpenAI):
+        self._llm = llm
+
+    def is_available(self) -> bool:
+        return self._llm is not None
+
     @staticmethod
-    def get_simple_response(prompt: str) -> str:
+    def _send_request(prompt: str) -> str:
         if not OLLAMA_URL:
-            raise ValueError("не задана переменная окружения OLLAMA_URL")
+            raise ValueError("Не задана переменная окружения OLLAMA_URL")
 
         try:
             response = requests.post(
@@ -21,14 +28,35 @@ class LLMService:
                     "model": MODEL_NAME,
                     "prompt": prompt,
                     "stream": False,
+                    "options": {
+                        "num_ctx": 2048
+                    }
                 },
-                timeout=60
+                timeout=180
             )
             response.raise_for_status()
             return response.json().get("response", "").strip()
         except requests.RequestException as e:
-            print(f"ошибка при обращении к ollama: {e}")
-            return "извините, сервис llm временно недоступен"
+            print(f"Ошибка при обращении к Ollama: {e}")
+            return "Извините, сервис LLM временно недоступен."
 
+    def get_simple_response(self, prompt: str) -> str:
+        if not self.is_available():
+            return "LLM сервис не сконфигурирован."
+        return self._send_request(prompt)
 
-llm_service = LLMService()
+    def get_rag_based_answer(self, user_query: str, context: str) -> str:
+        prompt = f"""
+            Ты — полезный ассистент службы поддержки. Твоя задача — ответить на вопрос пользователя, опираясь ИСКЛЮЧИТЕЛЬНО на предоставленный ниже контекст. Не придумывай ничего от себя. Если в контексте нет прямого ответа, вежливо сообщи об этом. Старайся писать не в общем, а более конкретно по шагам, если информации из базы знаний для этого достаточно.
+            
+            КОНТЕКСТ:
+            ---
+            {context}
+            ---
+            
+            ВОПРОС ПОЛЬЗОВАТЕЛЯ:
+            {user_query}
+            
+            ОТВЕТ:
+            """
+        return self._send_request(prompt)

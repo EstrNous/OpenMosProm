@@ -1,0 +1,67 @@
+import logging
+import os
+from dotenv import load_dotenv
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.llms.openai import OpenAI
+from ..services.rag_service import RAGService
+from ..services.llm_service import LLMService
+from ..services.agent_service import AgentService
+import asyncio
+from ..services.classifier_service import ClassifierService
+
+llm_service_instance: LLMService | None = None
+rag_service_instance: RAGService | None = None
+agent_service_instance: AgentService | None = None
+classifier_service_instance: ClassifierService | None = None
+
+
+async def setup_services():
+    global llm_service_instance, rag_service_instance, agent_service_instance
+    logging.info("Начинаю инициализацию сервисов...")
+
+    load_dotenv()
+
+    embed_model = HuggingFaceEmbedding(
+        model_name=os.getenv("EMBED_MODEL_NAME"),
+        query_instruction="query: ",
+        text_instruction="passage: "
+    )
+
+    ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434")
+    llm = None
+    if ollama_url:
+        try:
+            llm = OpenAI(
+                model="gpt-3.5-turbo",
+
+                api_base=ollama_url + "/v1",
+                api_key="dummy_key",
+                request_timeout=120.0,
+            )
+        except Exception as e:
+            logging.warning(f"Не удалось настроить LLM-клиент: {e}")
+    else:
+        logging.warning("Переменная OLLAMA_URL не задана. LLM-сервисы будут недоступны.")
+
+    llm_service_instance = LLMService(llm=llm)
+    rag_service_instance = RAGService(embed_model=embed_model)
+    classifier_service_instance = ClassifierService()
+
+    agent_service_instance = AgentService(
+        llm_service=llm_service_instance,
+        rag_service=rag_service_instance,
+        classifier_service=classifier_service_instance
+    )
+    logging.info("Все сервисы успешно инициализированы.")
+
+
+def ensure_services_ready():
+    global agent_service_instance
+    if agent_service_instance is not None:
+        return
+    logging.info("ensure_services_ready: сервисы не инициализированы, запускаю setup_services()...")
+    asyncio.run(setup_services())
+
+
+async def shutdown_services():
+    logging.info("Сервисы остановлены.")

@@ -1,4 +1,14 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
   backend:
     build:
       context: ./Backend
@@ -14,19 +24,41 @@ services:
     networks:
       - app-network
 
+  ml-worker:
+    build:
+      context: ./ML
+    command: celery -A app.celery_worker.celery_app worker --loglevel=info -c 1
+    env_file:
+      - .env
+    volumes:
+      - ml-rag-db:/app/db
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:8-alpine
+    networks:
+      - app-network
+
   ml-api:
     build:
       context: ./ML
+    volumes:
+      - ml-rag-db:/app/db
     ports:
       - "8001:8001"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001
     env_file:
       - .env
     depends_on:
-      - ollama
+      - redis
     networks:
       - app-network
 
   ollama:
+    profiles: ["llm"]
     build:
       context: ./ML
       dockerfile: Dockerfile.ollama
@@ -40,7 +72,7 @@ services:
     #     reservations:
     #       devices:
     #         - driver: nvidia
-    #           count: 1
+    #           count: all
     #           capabilities: [gpu]
     networks:
       - app-network
@@ -68,3 +100,4 @@ networks:
 volumes:
   ollama-data:
   postgres-data:
+  ml-rag-db:
