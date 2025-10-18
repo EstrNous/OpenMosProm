@@ -100,17 +100,17 @@ async def simulate_stop():
 async def simulate_status():
     return simulation_manager.status()
 
-@r.get("/statistic/all_count/{status_t}")
+@r.get("/statistic/all_count/{status_t}", summary="Количество тикетов", description="Возвращает количество тикетов, имеющих конкретный статус")
 async def get_sum_of_tickets(status_t: str, db = db):
     return get_tickets_by_status(db, status_t).count()
 
-@r.get("/statistic/time_spending")
+@r.get("/statistic/time_spending", summary="Время выполнения", description="Возвращает среднее время ответа на тикет")
 async def spend_time(db = db):
     time = []
     for i in range(get_tickets_by_status(db, "all").count()):
         time.append(get_ticket_times(db, i).get("resolved_at") - get_ticket_times(db, i).get("created_at"))
     return sum(time)/ len(time)
 
-@r.get("/statistic/cards/{status}")
+@r.get("/statistic/cards/{status}", summary="Все тикеты со статусом", description="Возвращает все тикеты, имеющие конкретный статус")
 async def get_tickets(status_t: str, db = db):
     return get_tickets_by_status(db, status_t)
