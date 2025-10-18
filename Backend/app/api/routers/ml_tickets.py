@@ -96,8 +96,6 @@ async def tickets_result(payload: MLWorkerResult = Body(...), db: Session = Depe
                 logger.exception("Failed to create auto-answer message for dialog %s", dialog_id)
         # 2) Пытаемся пометить тикет как решённый: resolved_at + status
         try:
-            # Если в CRUD есть close_ticket, используем его. Но он может опираться на ticket.id,
-            # поэтому безопаснее обновить напрямую по dialog_id:
             ticket.status = "solved"
             ticket.resolved_at = datetime.now()
             db.add(ticket)
@@ -107,7 +105,7 @@ async def tickets_result(payload: MLWorkerResult = Body(...), db: Session = Depe
         except SQLAlchemyError as e:
             logger.warning("Failed to mark ticket %s as solved: %s", dialog_id, e)
             try:
-                # fallback: пометим как escalated, но log will contain ml_result
+                # fallback: пометим как escalated, но лог будет содержать ml_result
                 ticket.status = "escalated"
                 db.add(ticket)
                 db.commit()
