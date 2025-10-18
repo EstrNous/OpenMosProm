@@ -1,10 +1,11 @@
 # app/routers/ml_tickets.py
 import os
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Body
 from typing import Optional
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from ..schemas import EnqueueIn, DequeueOut, ResultIn
+from pydantic import BaseModel, Field
+from ..schemas import EnqueueIn, DequeueOut, ResultIn, EnqueueResponse, DequeueResponse
 from ..services.ticket_queue import ticket_queue
 from Backend.crud import base_crud
 from Backend.db.models import Ticket as TicketModel
@@ -16,22 +17,30 @@ engine = create_engine(DATABASE_URL, connect_args=connect_args, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
-router = APIRouter(prefix="/api/ml", tags=["ml-tickets"])
+router = APIRouter(prefix="/api/ml", tags=["ML"])
 
-# dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-@router.post("/tickets/enqueue")
-async def enqueue_ticket(payload: EnqueueIn):
+@router.post(
+    "/tickets/enqueue",
+    response_model=EnqueueResponse,
+    summary="Создать тикет и поставить в очередь",
+    description="Техническая ручка для создания тикета в БД и постановки его в очереди. 'В бою' не используется, полезна для тестирования и ручного добавления."
+)
+async def enqueue_ticket(payload: EnqueueIn = Body(..., examples={
+    "existing_dialog": {"summary": "Добавить тикет в существующий диалог", "value": {"dialog_id": 5, "type": "access"}},
+    "new_dialog": {"summary": "Создать тикет без dialog_id (создастся новый dialog)", "value": {"dialog_id": None, "type": "other"}}
+})):
     ticket_id = await ticket_queue.enqueue_new(dialog_id=payload.dialog_id, type=payload.type)
     return {"ticket_id": ticket_id}
 
-@router.post("/tickets/dequeue", response_model=DequeueOut)
+
+# Удалим, если не потребуется
+@router.post(
+    "/tickets/dequeue",
+    response_model=DequeueResponse,
+    summary="Забрать следующий тикет из очереди (Pull)",
+    description="Ручка для pull-модели: ML может вызвать эту ручку чтобы получить следующий тикет. В нашей системе с диспетчером это не нужно, но возможность инициативы от ML, таким образом, учтена."
+)
 async def dequeue_ticket(worker_id: Optional[str] = None):
     ticket_id = await ticket_queue.dequeue(worker_id=worker_id, wait=True, timeout=1.0)
     if ticket_id is None:
@@ -45,8 +54,27 @@ async def dequeue_ticket(worker_id: Optional[str] = None):
     finally:
         db.close()
 
-@router.post("/tickets/result")
-async def ticket_result(payload: ResultIn):
+
+# Пока заглушки
+@router.post(
+    "/tickets/result",
+    summary="Callback от ML: результат обработки тикета",
+    description="""
+ML вызывает этот endpoint, чтобы сообщить результат обработки тикета.
+
+*Примеры `result` в теле запроса:*
+- Успешный ответ: `{"text":"Сбросили пароль"}`
+- Эскалация: `{"reason":"requires-human"}`
+- Вызов инструмента: `{"tool_name":"reset_password","parameters":{"user_id":"u123"}}`
+
+По умолчанию, если `solved=true`, тикет будет закрыт.
+""",
+)
+async def ticket_result(payload: ResultIn = Body(..., examples={
+    "answer": {"summary": "Успешный ответ", "value": {"ticket_id": 1, "result": {"text": "Пароль сброшен"}, "solved": True}},
+    "escalation": {"summary": "Запрос эскалации", "value": {"ticket_id": 2, "result": {"reason": "Requires manual verification"}, "solved": False}},
+    "tool_call": {"summary": "Вызов инструмента", "value": {"ticket_id": 3, "result": {"tool_name": "reset_password", "parameters": {"user_id": "user_123"}}, "solved": False}}
+})):
     ok = await ticket_queue.get_result(payload.ticket_id, result_payload=payload.result, solved=payload.solved)
     if not ok:
         raise HTTPException(status_code=404, detail="Ticket not found")
