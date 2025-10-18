@@ -134,31 +134,3 @@ def get_logs(db: Session, event_type: str | None = None) -> list[Log]:
     if event_type:
         query = query.filter(Log.event_type == event_type)
     return query.order_by(Log.created_at.desc()).all()
-
-def peek_next_open_ticket(db: Session) -> Ticket | None:
-    """
-    Возвращает самый старый тикет со статусом, отличным от 'in_progress'/'closed' (т.е. open),
-    не модифицируя его. FIFO по created_at.
-    """
-    stmt = select(Ticket).where(Ticket.status == "open").order_by(Ticket.created_at.asc()).limit(1)
-    res = db.execute(stmt).scalars().first()
-    return res
-
-def pop_next_ticket(db: Session) -> Ticket | None:
-    """
-    Извлекает самый старый open тикет и помечает его 'in_progress'.
-    Возвращает тикет или None, если очередь пуста.
-    Для прода нужно делать это в транзакции/с блокировкой.
-    """
-    # Находим старейший open тикет
-    ticket = peek_next_open_ticket(db)
-    if not ticket:
-        return None
-
-    # Помечаем как in_progress
-    ticket.status = "in_progress"
-
-    db.add(ticket)
-    db.commit()
-    db.refresh(ticket)
-    return ticket
