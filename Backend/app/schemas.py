@@ -1,4 +1,4 @@
-from typing import Optional, Literal, Dict, Any
+from typing import Optional, Literal, Dict, Any, List
 from pydantic import BaseModel, Field
 
 class PromptRequest(BaseModel):
@@ -82,3 +82,32 @@ class MLCallback(BaseModel):
     action_type: Literal["answer", "escalate", "call_tool"] = Field(..., description="Действие, которое предлагает ML")
     payload: Optional[Dict[str, Any]] = Field(None, description="Содержимое результата — зависит от action_type")
     user_query: Optional[str] = Field(None, description="Оригинальный вопрос пользователя")
+
+class ToolModel(BaseModel):
+    """
+    Pydantic-схема для модели Tool (таблица tools).
+    Используется для возврата данных об инструменте.
+    """
+    id: int = Field(..., description="Уникальный идентификатор инструмента")
+    name: str = Field(..., description="Уникальное имя инструмента")
+    description: Optional[str] = Field(None, description="Описание инструмента")
+    created_at: Optional[str] = Field(None, description="Время создания записи в ISO-формате")
+
+    class Config:
+        orm_mode = True
+
+
+class ToolInvocationModel(BaseModel):
+    """
+    Pydantic-схема для записи вызова инструмента (таблица tool_invocations).
+    Используется для возврата деталей каждого вызова.
+    """
+    id: int = Field(..., description="Уникальный идентификатор вызова")
+    tool_id: int = Field(..., description="ID инструмента")
+    dialog_id: Optional[int] = Field(None, description="ID связанного диалога")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="Параметры вызова инструмента")
+    result: Optional[Dict[str, Any]] = Field(None, description="Результат выполнения инструмента")
+    created_at: Optional[str] = Field(None, description="Время создания записи в ISO-формате")
+
+    class Config:
+        orm_mode = True

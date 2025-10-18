@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, status, Body, Depends, BackgroundT
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
-from ...schemas import PromptRequest, SimpleAnswer, SupportRequest, SupportResponse
+from ...schemas import PromptRequest, SimpleAnswer, SupportRequest, SupportResponse, ToolModel, ToolInvocationModel
 from ...services import simulation_manager
 from ...crud import base_crud
-from ...crud.base_crud import get_ticket_times, get_tickets_by_status
+from ...crud.base_crud import get_ticket_times, get_tickets_by_status, get_all_tools
 from ...db.session import get_db
 from ...services.ml_client import send_ticket_to_ml
 
@@ -116,3 +116,22 @@ async def spend_time(db: Session = Depends(get_db)):
 @r.get("/statistic/cards/{status}")
 async def get_tickets(status_t: str, db: Session = Depends(get_db)):
     return get_tickets_by_status(db, status_t)
+
+@r.get("/statistic/tools")
+async def get_tools(db: Session = Depends(get_db)):
+    return get_all_tools(db)
+
+@r.get("/statistic/tools/{tool_id}/invocations")
+async def get_tool_invocations_count(tool_id: int, db: Session = Depends(get_db)):
+    """
+    Возвращает количество вызовов (invocations) для инструмента с id = tool_id.
+    """
+    # проверим, что инструмент существует
+    tool = db.query(ToolModel).filter(ToolModel.id == tool_id).first()
+    if not tool:
+        raise HTTPException(status_code=404, detail=f"Tool with id={tool_id} not found")
+
+    # посчитаем invocations
+    count = db.query(ToolInvocationModel).filter(ToolInvocationModel.tool_id == tool_id).count()
+
+    return {"tool_id": tool_id, "tool_name": tool.name, "invocations_count": count}
