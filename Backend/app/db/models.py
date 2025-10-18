@@ -14,7 +14,6 @@ class Dialog(Base):
     status = Column(Enum("active", "closed", "escalated", name="dialog_status"), default="active")
     type = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now)
     resolved_at = Column(DateTime, nullable=True)
 
     messages = relationship("Message", back_populates="dialog")

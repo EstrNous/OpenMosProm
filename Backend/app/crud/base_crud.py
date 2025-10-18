@@ -21,7 +21,6 @@ def update_dialog_status(db: Session, dialog_id: int, status: str) -> Dialog | N
     dialog = db.query(Dialog).filter(Dialog.id == dialog_id).first()
     if dialog:
         dialog.status = status
-        dialog.updated_at = datetime.now()
         db.commit()
         db.refresh(dialog)
     return dialog
@@ -32,7 +31,6 @@ def close_dialog(db: Session, dialog_id: int, type: str | None = None) -> Dialog
         dialog.status = "closed"
         dialog.type = type
         dialog.resolved_at = datetime.now()
-        dialog.updated_at = datetime.now()
         db.commit()
         db.refresh(dialog)
     return dialog

@@ -104,9 +104,9 @@ async def get_sum_of_dialogs(status_t: str, db: Session = Depends(get_db)):
 @r.get("/statistic/time_spending")
 async def spend_time(db: Session = Depends(get_db)):
     time = []
-    tickets = get_dialogs_by_status(db, "closed")
-    for i in range(len(tickets)):
-        time.append(tickets[i].resolved_at - tickets[i].created_at)
+    dialogs = get_dialogs_by_status(db, "closed")
+    for i in range(len(dialogs)):
+        time.append(dialogs[i].resolved_at - dialogs[i].created_at)
     if len(time) == 0:
         return None
     else:
