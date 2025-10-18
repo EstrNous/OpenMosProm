@@ -113,7 +113,7 @@ async def spend_time(db: Session = Depends(get_db)):
     for i in range(len(tickets)):
         time.append(tickets[i].resolved_at - tickets[i].created_at)
     if len(time) == 0:
-        return {"massage": "Ещё ни одного запроса не было решено"}
+        return None
     else:
         return sum(time)/ len(time)
 
