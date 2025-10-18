@@ -15,6 +15,9 @@ services:
   ml-api:
     build:
       context: ./ML
+      dockerfile: Dockerfile
+    volumes:
+      - ml-rag-db:/app/db
     ports:
       - "8001:8001"
     env_file:
@@ -38,7 +41,7 @@ services:
     #     reservations:
     #       devices:
     #         - driver: nvidia
-    #           count: 1
+    #           count: all
     #           capabilities: [gpu]
     networks:
       - app-network
@@ -61,3 +64,4 @@ networks:
 volumes:
   ollama-data:
   postgres-data:
+  ml-rag-db:

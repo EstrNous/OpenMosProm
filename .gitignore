@@ -1,5 +1,6 @@
 ML/venv/
 Backend/venv/
+/ML/db/
 
 .vscode/
 .idea/
