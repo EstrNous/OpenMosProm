@@ -63,6 +63,9 @@ def create_message(db: Session, dialog_id: int, content: str) -> Message:
     db.refresh(message)
     return message
 
+def get_messages_by_dialog(db: Session, dialog_id: int) -> list[Message]:
+    return db.query(Message).filter(Message.dialog_id == dialog_id).order_by(Message.timestamp).all()
+
 def create_feedback(db: Session, dialog_id: int, rating: int, comment: str | None = None) -> Feedback:
     feedback = Feedback(dialog_id=dialog_id, rating=rating, comment=comment)
     db.add(feedback)
