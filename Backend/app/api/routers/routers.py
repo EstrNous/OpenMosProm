@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ...schemas import PromptRequest, SimpleAnswer, SupportRequest, SupportResponse
 from ...services import simulation_manager
 from ...crud import base_crud
-from ...crud.base_crud import  get_tickets_by_status, get_all_tools, get_tool_invocations
+from ...crud.base_crud import get_all_tools, get_tool_invocations, get_dialogs_by_status
 from ...db.session import get_db
 from ...services.ml_client import send_ticket_to_ml
 
@@ -103,23 +103,23 @@ async def simulate_status():
     return simulation_manager.status()
 
 @r.get("/statistic/all_count/{status_t}")
-async def get_sum_of_tickets(status_t: str, db: Session = Depends(get_db)):
-    return len(get_tickets_by_status(db, status_t))
+async def get_sum_of_dialogs(status_t: str, db: Session = Depends(get_db)):
+    return len(get_dialogs_by_status(db, status_t))
 
 @r.get("/statistic/time_spending")
 async def spend_time(db: Session = Depends(get_db)):
     time = []
-    tickets = get_tickets_by_status(db, "solved")
-    for i in range(len(tickets)):
-        time.append(tickets[i].resolved_at - tickets[i].created_at)
+    dialogs = get_dialogs_by_status(db, "closed")
+    for i in range(len(dialogs)):
+        time.append(dialogs[i].resolved_at - dialogs[i].created_at)
     if len(time) == 0:
         return None
     else:
         return sum(time)/ len(time)
 
 @r.get("/statistic/cards/{status}")
-async def get_tickets(status_t: str, db: Session = Depends(get_db)):
-    return get_tickets_by_status(db, status_t)
+async def get_dialogs(status_t: str, db: Session = Depends(get_db)):
+    return get_dialogs_by_status(db, status_t)
 
 @r.get("/statistic/tools")
 async def get_tools(db: Session = Depends(get_db)):
