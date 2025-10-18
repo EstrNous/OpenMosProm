@@ -12,6 +12,25 @@ services:
     networks:
       - app-network
 
+  ml-worker:
+    build:
+      context: ./ML
+    command: celery -A app.celery_worker.celery_app worker --loglevel=info -c 1
+    env_file:
+      - .env
+    volumes:
+      - ml-rag-db:/app/db
+    depends_on:
+      - redis
+      - ollama
+    networks:
+      - app-network
+
+  redis:
+    image: redis:8-alpine
+    networks:
+      - app-network
+
   ml-api:
     build:
       context: ./ML
@@ -24,6 +43,7 @@ services:
       - .env
     depends_on:
       - ollama
+      - redis
     networks:
       - app-network
 

@@ -6,6 +6,7 @@ from llama_index.llms.openai import OpenAI
 from ..services.rag_service import RAGService
 from ..services.llm_service import LLMService
 from ..services.agent_service import AgentService
+import asyncio
 
 llm_service_instance: LLMService | None = None
 rag_service_instance: RAGService | None = None
@@ -39,6 +40,14 @@ async def setup_services():
         rag_service=rag_service_instance
     )
     logging.info("Все сервисы успешно инициализированы.")
+
+
+def ensure_services_ready():
+    global agent_service_instance
+    if agent_service_instance is not None:
+        return
+    logging.info("ensure_services_ready: сервисы не инициализированы, запускаю setup_services()...")
+    asyncio.run(setup_services())
 
 
 async def shutdown_services():
