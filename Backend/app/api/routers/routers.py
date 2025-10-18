@@ -49,7 +49,7 @@ async def test_func(request: PromptRequest = Body(..., examples={
     "/support/process",
     response_model=SupportResponse,
     summary="Принять обращение пользователя и поставить в обработку",
-    description="Создаёт Dialog/Message/Ticket в БД и асинхронно отправляет тикет в ML."
+    description="Создаёт Dialog и Message в БД и асинхронно отправляет тикет в ML."
 )
 async def process_support_request(
     request: SupportRequest = Body(...),
@@ -57,31 +57,26 @@ async def process_support_request(
     db: Session = Depends(get_db),
 ):
     """
-    Создаёт dialog, message и ticket, возвращает ticket_id (который равен dialog_id),
+    Создаёт dialog и message, возвращает dialog_id
     и запускает BackgroundTask для отправки в ML.
     """
     print(f"[support/process] Получено обращение от {request.user_id}: {request.user_message[:200]}...")
 
     try:
-        # create_dialog returns Dialog with id
         dialog = base_crud.create_dialog(db, session_id=f"{request.user_id}-{request.timestamp}")
         base_crud.create_message(db, dialog_id=dialog.id, content=request.user_message)
-        base_crud.create_ticket(db, dialog_id=dialog.id, type=None)
-        # ticket identifier in your system == dialog.id
-        ticket_id = dialog.id
     except Exception as e:
-        print(f"[support/process] Ошибка при создании тикета: {e}")
+        print(f"[support/process] Ошибка при создании диалога: {e}")
         raise HTTPException(status_code=500, detail="error creating ticket")
 
     # запускаем фоновую задачу: передаем dialog.id
     if background_tasks is not None:
-        background_tasks.add_task(send_ticket_to_ml, ticket_id)
+        background_tasks.add_task(send_ticket_to_ml, dialog.id)
     else:
-        import asyncio
-        asyncio.create_task(send_ticket_to_ml(ticket_id))
+        raise HTTPException(status_code=404, detail="Background tasks are not found.")
 
     # Возвращаем ticket_id == dialog.id
-    return {"ticket_id": ticket_id, "dialog_id": dialog.id, "status": "in_progress"}
+    return {"dialog_id": dialog.id, "status": "active"}
 
 
 @r.post("/simulate/start", summary="Запустить симуляцию входящих обращений", description="Запустить фоновую задачу-симулятор, которая подаёт обращения из файла requests.txt.")

@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger("simulation-manager")
+
 if not logger.handlers:
     import sys
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -21,8 +22,7 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 # создаём симулятор
 simulator = UserSimulator(requests_file=REQUESTS_FILE, backend_url=BACKEND_URL,
                           min_interval=float(os.getenv("INTERVAL_LOWER", 0.5)),
-                          max_interval=float(os.getenv("INTERVAL_UPPER", 2.0)),
-                          max_requests=(int(os.getenv("SIM_MAX_REQUESTS", "0")) or None))
+                          max_interval=float(os.getenv("INTERVAL_UPPER", 2.0)))
 
 _sim_task: asyncio.Task | None = None
 

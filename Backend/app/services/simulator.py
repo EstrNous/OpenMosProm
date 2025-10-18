@@ -21,10 +21,10 @@ if not logger.handlers:
                         format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
 
 class UserSimulator:
-    def __init__(self, requests_file: str, backend_url: str, min_interval: float = 0.5, max_interval: float = 2.0, max_requests: int | None = None):
+    def __init__(self, requests_file: str, backend_url: str, min_interval: float = 0.5, max_interval: float = 2.0):
         """
         requests_file: путь к файлу с примерами обращений (одна строка = одно обращение)
-        backend_url: базовый URL вашего backend (например http://backend:8000)
+        backend_url: базовый URL backend (например http://backend:8000)
         min_interval/max_interval: пауза между отправками
         max_requests: опциональный предел на количество отправок (None — бесконечно, пока есть lines)
         """
@@ -35,7 +35,6 @@ class UserSimulator:
         self.sent_count = 0
         self.min_interval = float(os.getenv("INTERVAL_LOWER", min_interval))
         self.max_interval = float(os.getenv("INTERVAL_UPPER", max_interval))
-        self.max_requests = max_requests if max_requests is not None else (int(os.getenv("SIM_MAX_REQUESTS", "0")) or None)
 
         logger.info("UserSimulator init: requests_file=%s backend_url=%s interval=[%s, %s] max_requests=%s",
                     self.requests_file, self.backend_url, self.min_interval, self.max_interval, self.max_requests)
@@ -63,16 +62,16 @@ class UserSimulator:
 
         self.is_running = True
         self.sent_count = 0
-        start_time = datetime.utcnow()
+        start_time = datetime.now()
         logger.info("Starting simulation at %s (total_requests=%d)", start_time.isoformat(), len(self.requests))
 
         try:
             while self.is_running and self.requests:
-                if self.max_requests is not None and self.sent_count >= self.max_requests:
+                if self.sent_count >= len(self.requests):
                     logger.info("Reached max_requests=%s, stopping simulation.", self.max_requests)
                     break
 
-                request_text = random.choice(self.requests)
+                request_text = self.requests.pop(random.randint(0, len(self.requests)))
                 self.sent_count += 1
                 seq_no = self.sent_count
 
@@ -88,7 +87,7 @@ class UserSimulator:
                 await asyncio.sleep(sleep_for)
 
         finally:
-            elapsed = (datetime.utcnow() - start_time).total_seconds()
+            elapsed = (datetime.now() - start_time).total_seconds()
             logger.info("Simulation stopped. total_sent=%d elapsed_seconds=%.1f", self.sent_count, elapsed)
             self.is_running = False
 
