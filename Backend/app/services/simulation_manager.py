@@ -3,7 +3,6 @@ import os
 import asyncio
 import logging
 from .simulator import UserSimulator
-
 from dotenv import load_dotenv
 
 # Загружаем переменные окружения
@@ -16,7 +15,7 @@ if not logger.handlers:
     logging.basicConfig(stream=sys.stdout, level=log_level,
                         format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
 
-REQUESTS_FILE = os.getenv("REQUESTS_FILE", "data/requests.txt")
+REQUESTS_FILE = os.getenv("REQUESTS_FILE", "app/data/requests.txt")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # создаём симулятор
