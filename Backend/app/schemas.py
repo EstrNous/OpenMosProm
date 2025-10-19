@@ -20,9 +20,7 @@ class SupportRequest(BaseModel):
 
 
 class SupportResponse(BaseModel):
-    """Краткий ответ на создание обращения — возвращается клиенту."""
-    ticket_id: int = Field(..., description="ID созданного тикета")
-    dialog_id: int = Field(..., description="ID связанного диалога")
+    dialog_id: int = Field(..., description="ID созданного тикета")
     status: str = Field(..., description="Текущий статус тикета")
 
 
@@ -114,7 +112,7 @@ class ToolInvocationModel(BaseModel):
 
 
 class MLWorkerResult(BaseModel):
-    ticket_id: int = Field(..., description="ID тикета (dialog_id)")
+    dialog_id: int = Field(..., description="ID тикета (dialog_id)")
     status: Literal["processed", "error"] = Field(..., description="processed | error")
     ml_result: Optional[Dict[str, Any]] = Field(None, description="Результат ML (при status=processed)")
     error_message: Optional[str] = Field(None, description="Текст ошибки (при status=error)")

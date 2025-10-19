@@ -4,13 +4,12 @@ import logging
 from typing import Any, Dict
 
 import httpx
-from ..db.models import Ticket
+from ..db.models import Dialog
 from ..crud import base_crud
 from ..db.session import SessionLocal
 
 from dotenv import load_dotenv
 
-# Загружаем переменные окружения
 load_dotenv()
 
 ML_API_URL = os.getenv("ML_API_URL", "http://ml-api:8001")
@@ -24,16 +23,16 @@ logger = logging.getLogger("ml-client")
 async def _build_payload_for_dialog(dialog_id: int) -> Dict[str, Any]:
     db = SessionLocal()
     try:
-        ticket = db.query(Ticket).filter(Ticket.dialog_id == dialog_id).first()
-        if not ticket:
+        dialog = db.query(Dialog).filter(Dialog.id == dialog_id).first()
+        if not dialog:
             return {}
         try:
-            msg = base_crud.get_messages_by_dialog(db, ticket.dialog_id)[0].content
+            msg = base_crud.get_messages_by_dialog(db, dialog_id)[0].content
         except Exception:
-            msg = ""
+            msg = "ERROR"
         payload = {
             "user_query": msg,
-            "ticket_id": ticket.dialog_id
+            "dialog_id": str(dialog_id)
         }
         return payload
     finally:
@@ -42,7 +41,7 @@ async def _build_payload_for_dialog(dialog_id: int) -> Dict[str, Any]:
 
 async def send_ticket_to_ml(dialog_id: int) -> None:
     """
-    Асинхронно отправляет ticket (идентифицированный dialog_id) в ML.
+    Асинхронно отправляет dialog в ML.
     """
     payload = await _build_payload_for_dialog(dialog_id)
     if not payload:

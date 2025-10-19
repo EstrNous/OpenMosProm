@@ -46,7 +46,7 @@ def process_user_query(request: AgentQueryRequest):
 def submit_task(request: TaskSubmitRequest):
     task = process_ticket_query.delay(
         user_query=request.user_query,
-        ticket_id=request.ticket_id
+        dialog_id=request.dialog_id
     )
 
-    return TaskSubmitResponse(task_id=task.id, status="accepted")
+    return TaskSubmitResponse(dialog_id=task.id, status="accepted")

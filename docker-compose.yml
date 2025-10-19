@@ -3,7 +3,10 @@ services:
     build:
       context: ./frontend
       args:
-        CACHEBUST: ${CACHEBUST:-1}
+        # Генерируем уникальное значение при каждом build
+        CACHEBUST: ${CACHEBUST:-$(date +%s)}
+      # Отключаем кеш для frontend при build
+      no_cache: true
     ports:
       - "3000:80"
     depends_on:
@@ -35,7 +38,10 @@ services:
     volumes:
       - ml-rag-db:/app/db
     depends_on:
-      - redis
+      ml-api:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - app-network
 
@@ -56,6 +62,12 @@ services:
       - .env
     depends_on:
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 300s
     networks:
       - app-network
 
