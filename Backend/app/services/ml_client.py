@@ -32,7 +32,7 @@ async def _build_payload_for_dialog(dialog_id: int) -> Dict[str, Any]:
             msg = "ERROR"
         payload = {
             "user_query": msg,
-            "dialog_id": dialog_id
+            "dialog_id": str(dialog_id)
         }
         return payload
     finally:

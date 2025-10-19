@@ -6,8 +6,6 @@ from celery.signals import worker_process_init
 from .core.settings import setup_services
 from .core import settings
 
-setup_services()
-
 BACKEND_CALLBACK_URL = os.getenv("BACKEND_CALLBACK_URL")
 MAX_RETRIES = int(os.getenv("CELERY_MAX_RETRIES", 3))
 RETRY_DELAY_SEC = int(os.getenv("CELERY_RETRY_DELAY_SEC", 300))

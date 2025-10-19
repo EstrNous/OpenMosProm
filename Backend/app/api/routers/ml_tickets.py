@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/ml", tags=["ML"])
 db = get_db()
 
 
-@router.post("dialogs/result", summary="Callback от ML-воркера: результат обработки диалога")
+@router.post("/dialogs/result", summary="Callback от ML-воркера: результат обработки диалога")
 async def dialogs_result(payload: MLWorkerResult = Body(...), db: Session = Depends(get_db)):
     """
     Обработка callback'а от ML-воркера в формате, который присылает ML-команда.
@@ -30,7 +30,7 @@ async def dialogs_result(payload: MLWorkerResult = Body(...), db: Session = Depe
     """
     dialog_id = payload.dialog_id
 
-    dialog = db.query(Dialog).filter(Dialog.dialog_id == dialog_id).first()
+    dialog = db.query(Dialog).filter(Dialog.id == dialog_id).first()
     if not dialog:
         logger.warning("ML callback: ialog_id %s not found", dialog_id)
         raise HTTPException(status_code=404, detail="Dialog not found")
@@ -83,7 +83,8 @@ async def dialogs_result(payload: MLWorkerResult = Body(...), db: Session = Depe
                 logger.exception("Failed to create auto-answer message for dialog %s", dialog_id)
         # 2)  Помечаем диалог как решённый: closed + status
         dialog.status = "closed"
-        dialog_id.resolved_at = datetime.now()
+        dialog.type = category
+        dialog.resolved_at = datetime.now()
         db.add(dialog)
         db.commit()
         db.refresh(dialog)
@@ -111,6 +112,7 @@ async def dialogs_result(payload: MLWorkerResult = Body(...), db: Session = Depe
         # обновляем статус в БД
         try:
             dialog.status = "escalated"
+            dialog.type = category
             db.add(dialog)
             db.commit()
             db.refresh(dialog)

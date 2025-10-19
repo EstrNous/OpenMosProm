@@ -20,9 +20,7 @@ class SupportRequest(BaseModel):
 
 
 class SupportResponse(BaseModel):
-    """Краткий ответ на создание обращения — возвращается клиенту."""
-    ticket_id: int = Field(..., description="ID созданного тикета")
-    dialog_id: int = Field(..., description="ID связанного диалога")
+    dialog_id: int = Field(..., description="ID созданного тикета")
     status: str = Field(..., description="Текущий статус тикета")
 
 
