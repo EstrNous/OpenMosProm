@@ -59,7 +59,10 @@ def process_ticket_query(self, user_query: str, dialog_id: str):
 
         result = settings.agent_service_instance.process_query(user_query)
 
-        send_callback_to_backend(dialog_id, "processed", ml_result=result)
+        result_with_query = result.copy()
+        result_with_query['user_query'] = user_query
+
+        send_callback_to_backend(dialog_id, "processed", ml_result=result_with_query)
 
         return {"status": "success"}
 

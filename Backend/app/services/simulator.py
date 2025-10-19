@@ -67,10 +67,6 @@ class UserSimulator:
 
         try:
             while self.is_running and self.requests:
-                if self.sent_count >= len(self.requests):
-                    logger.info("Reached max_requests=%s, stopping simulation.")
-                    break
-
                 request_text = self.requests.pop(random.randrange(len(self.requests)))
                 self.sent_count += 1
                 seq_no = self.sent_count
