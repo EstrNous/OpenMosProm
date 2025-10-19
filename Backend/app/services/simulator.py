@@ -36,8 +36,8 @@ class UserSimulator:
         self.min_interval = float(os.getenv("INTERVAL_LOWER", min_interval))
         self.max_interval = float(os.getenv("INTERVAL_UPPER", max_interval))
 
-        logger.info("UserSimulator init: requests_file=%s backend_url=%s interval=[%s, %s] max_requests=%s",
-                    self.requests_file, self.backend_url, self.min_interval, self.max_interval, self.max_requests)
+        logger.info("UserSimulator init: requests_file=%s backend_url=%s interval=[%s, %s]",
+                    self.requests_file, self.backend_url, self.min_interval, self.max_interval)
 
     async def load_requests(self):
         """Загрузка реальных обращений из файла"""
@@ -68,10 +68,10 @@ class UserSimulator:
         try:
             while self.is_running and self.requests:
                 if self.sent_count >= len(self.requests):
-                    logger.info("Reached max_requests=%s, stopping simulation.", self.max_requests)
+                    logger.info("Reached max_requests=%s, stopping simulation.")
                     break
 
-                request_text = self.requests.pop(random.randint(0, len(self.requests)))
+                request_text = self.requests.pop(random.randrange(len(self.requests)))
                 self.sent_count += 1
                 seq_no = self.sent_count
 
