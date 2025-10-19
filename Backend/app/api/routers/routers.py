@@ -4,6 +4,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, status, Body, Depends, BackgroundTasks
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
+from fastapi.responses import JSONResponse
 
 from ...schemas import PromptRequest, SimpleAnswer, SupportRequest, SupportResponse
 from ...services import simulation_manager
@@ -11,6 +12,7 @@ from ...crud import base_crud
 from ...crud.base_crud import get_all_tools, get_tool_invocations, get_dialogs_by_status
 from ...db.session import get_db
 from ...services.ml_client import send_ticket_to_ml
+from ...db.models import Log, Message
 
 from datetime import timedelta
 
@@ -18,7 +20,7 @@ from datetime import timedelta
 load_dotenv()
 
 r = APIRouter(tags=["Support"])
-ML_API_URL = os.getenv('ML_API_URL')
+ML_API_URL = os.getenv("ML_API_URL")
 
 
 @r.post("/test-ml", response_model=SimpleAnswer, summary="Тестовый запрос к ML",
@@ -122,9 +124,34 @@ async def spend_time(db: Session = Depends(get_db)):
         return sum(time, timedelta()) / len(time)
 
 
-@r.get("/statistic/cards/{status}")
+@r.get("/statistic/cards/{status_t}")
 async def get_dialogs(status_t: str, db: Session = Depends(get_db)):
-    return get_dialogs_by_status(db, status_t)
+    dialogs = get_dialogs_by_status(db, status_t)
+
+    results = []
+    for dialog in dialogs:
+        ml_log = db.query(Log).filter(
+            Log.dialog_id == dialog.id,
+            Log.event_type == "ml_result"
+        ).order_by(Log.created_at.desc()).first()
+
+        first_message = db.query(Message).filter(Message.dialog_id == dialog.id).order_by(
+            Message.timestamp.asc()).first()
+
+        dialog_data = {
+            "id": dialog.id,
+            "session_id": dialog.session_id,
+            "status": dialog.status,
+            "type": dialog.type,
+            "created_at": dialog.created_at.isoformat() if dialog.created_at else None,
+            "resolved_at": dialog.resolved_at.isoformat() if dialog.resolved_at else None,
+            "user_query": ml_log.details.get("ml_result", {}).get("user_query") if ml_log and ml_log.details else (
+                first_message.content if first_message else "Запрос не найден"),
+            "ml_result": ml_log.details.get("ml_result") if ml_log and ml_log.details else None
+        }
+        results.append(dialog_data)
+
+    return JSONResponse(content=results)
 
 
 @r.get("/statistic/tools")
